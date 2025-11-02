@@ -4,8 +4,9 @@ from tkinter import ttk, messagebox
 from backend.database import get_connection
 
 class BookingsFrame(tk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, language_manager):
         super().__init__(parent)
+        self.language_manager = language_manager
         self.sort_column = 'booking_date'
         self.sort_direction = 'DESC'
         self.setup_ui()
@@ -21,7 +22,7 @@ class BookingsFrame(tk.Frame):
       
       title = tk.Label(
           header_frame,
-          text="Bookings Management",
+          text=self.language_manager.get_text('booking_management'),
           font=('Arial', 18, 'bold'),
           bg='white',
           fg='#2c3e50'
@@ -34,14 +35,14 @@ class BookingsFrame(tk.Frame):
       
       refresh_btn = ttk.Button(
           button_frame,
-          text="Refresh",
+          text=self.language_manager.get_text('refresh'),
           command=self.load_bookings
       )
       refresh_btn.pack(side=tk.LEFT, padx=5)
       
       add_btn = ttk.Button(
           button_frame,
-          text="New Booking",
+          text=self.language_manager.get_text('new_booking'),
           command=self.add_booking
       )
       add_btn.pack(side=tk.LEFT, padx=5)
@@ -50,7 +51,7 @@ class BookingsFrame(tk.Frame):
       search_frame = tk.Frame(self, bg='white')
       search_frame.pack(fill=tk.X, padx=20, pady=10)
       
-      tk.Label(search_frame, text="Search:", bg='white').pack(side=tk.LEFT)
+      tk.Label(search_frame, text=self.language_manager.get_text('search') + ":", bg='white').pack(side=tk.LEFT)
       
       self.search_var = tk.StringVar()
       search_entry = ttk.Entry(
@@ -77,14 +78,14 @@ class BookingsFrame(tk.Frame):
       )
       
       # Define headings - CORRECTED MAPPING
-      self.tree.heading('booking_ref', text='Booking Ref.')
-      self.tree.heading('passenger_name', text='Passenger')
-      self.tree.heading('flight_number', text='Flight')
-      self.tree.heading('route', text='Route')
-      self.tree.heading('booking_date', text='Booking Date')
-      self.tree.heading('seat_count', text='Seats')
-      self.tree.heading('total_price', text='Total Price')
-      self.tree.heading('status', text='Status')
+      self.tree.heading('booking_ref', text=self.language_manager.get_text('booking_id'))
+      self.tree.heading('passenger_name', text=self.language_manager.get_text('passenger_name'))
+      self.tree.heading('flight_number', text=self.language_manager.get_text('flight'))
+      self.tree.heading('route', text=self.language_manager.get_text('route'))
+      self.tree.heading('booking_date', text=self.language_manager.get_text('booking_date'))
+      self.tree.heading('seat_count', text=self.language_manager.get_text('seat_number'))
+      self.tree.heading('total_price', text=self.language_manager.get_text('price'))
+      self.tree.heading('status', text=self.language_manager.get_text('booking_status'))
       
       # Configure columns - CORRECTED WIDTHS
       self.tree.column('booking_ref', width=100)
@@ -148,7 +149,7 @@ class BookingsFrame(tk.Frame):
           # Show message if no bookings
           if not bookings:
               self.tree.insert('', tk.END, values=(
-                  "No bookings found", "", "", "", "", "", "", "", ""
+                  self.language_manager.get_text('no_bookings_found'), "", "", "", "", "", "", ""
               ))
               
       except Exception as e:
@@ -204,7 +205,7 @@ class BookingsFrame(tk.Frame):
               
           if not bookings:
               self.tree.insert('', tk.END, values=(
-                  "No bookings found", "", "", "", "", "", "", "", ""
+                  self.language_manager.get_text('no_bookings_found'), "", "", "", "", "", "", ""
               ))
               
       except Exception as e:
@@ -216,13 +217,20 @@ class BookingsFrame(tk.Frame):
         if selection:
             item = self.tree.item(selection[0])
             booking_data = item['values']
-            if booking_data and len(booking_data) >= 2 and booking_data[0] != "No bookings found":
+            # Check if we have valid booking data (not the "no bookings found" message)
+            if (booking_data and len(booking_data) >= 1 and 
+                booking_data[0] != self.language_manager.get_text('no_bookings_found')):
                 self.view_booking_details(booking_data)
     
     def view_booking_details(self, booking_data):
         """Show booking details popup"""
+        # Check if we have enough data
+        if len(booking_data) < 8:
+            messagebox.showerror("Error", "Incomplete booking data. Cannot display details.")
+            return
+            
         details_window = tk.Toplevel(self)
-        details_window.title("Booking Details")
+        details_window.title(self.language_manager.get_text('booking_details'))
         details_window.geometry("500x400")
         
         # Set icon
@@ -236,17 +244,20 @@ class BookingsFrame(tk.Frame):
         details_frame = tk.Frame(details_window, padx=20, pady=20)
         details_frame.pack(fill=tk.BOTH, expand=True)
         
+        # Create labels based on available data
         labels = [
-            ("Booking ID:", booking_data[0]),
-            ("Ticket Number:", booking_data[1]),
-            ("Passenger:", booking_data[2]),
-            ("Flight:", booking_data[3]),
-            ("Route:", booking_data[4]),
-            ("Booking Date:", booking_data[5]),
-            ("Seat Count:", booking_data[6]),
-            ("Total Price:", f"${booking_data[7]}"),
-            ("Status:", booking_data[8])
+            (self.language_manager.get_text('booking_id') + ":", booking_data[0]),
+            (self.language_manager.get_text('passenger_name') + ":", booking_data[1]),
+            (self.language_manager.get_text('flight') + ":", booking_data[2]),
+            (self.language_manager.get_text('route') + ":", booking_data[3]),
+            (self.language_manager.get_text('booking_date') + ":", booking_data[4]),
+            (self.language_manager.get_text('seat_count') + ":", booking_data[5]),
+            (self.language_manager.get_text('total_price') + ":", f"${booking_data[6]}"),
         ]
+        
+        # Add status if available (index 7)
+        if len(booking_data) > 7:
+            labels.append((self.language_manager.get_text('status') + ":", booking_data[7]))
         
         for i, (label, value) in enumerate(labels):
             tk.Label(details_frame, text=label, font=('Arial', 10, 'bold')).grid(
@@ -258,24 +269,33 @@ class BookingsFrame(tk.Frame):
         button_frame = tk.Frame(details_frame)
         button_frame.grid(row=len(labels), column=0, columnspan=2, pady=20)
         
-        if booking_data[8] == 'confirmed':
-            ttk.Button(button_frame, text="Cancel Booking", 
-                      command=lambda: self.cancel_booking(booking_data[0], details_window)).pack(side=tk.LEFT, padx=5)
+        # Only show cancel button if status is available and is 'confirmed'
+        if len(booking_data) > 7 and booking_data[7] == 'confirmed':
+            ttk.Button(button_frame, text=self.language_manager.get_text('cancel_booking'), 
+                    command=lambda: self.cancel_booking(booking_data[0], details_window)).pack(side=tk.LEFT, padx=5)
         
-        ttk.Button(button_frame, text="Close", 
-                  command=details_window.destroy).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text=self.language_manager.get_text('close'), 
+                command=details_window.destroy).pack(side=tk.LEFT, padx=5)
     
-    def cancel_booking(self, booking_id, window):
+    def cancel_booking(self, booking_ref, window):
         """Cancel a booking"""
         try:
             conn = get_connection()
             cursor = conn.cursor()
             
-            cursor.execute("UPDATE tickets SET status = 'cancelled' WHERE booking_id = ?", (booking_id,))
+            # Update the tickets status for this booking reference
+            cursor.execute("""
+                UPDATE tickets 
+                SET status = 'cancelled' 
+                WHERE booking_id IN (
+                    SELECT id FROM bookings WHERE booking_reference = ?
+                )
+            """, (booking_ref,))
+            
             conn.commit()
             conn.close()
             
-            messagebox.showinfo("Success", "Booking cancelled successfully!")
+            messagebox.showinfo("Success", self.language_manager.get_text('booking_cancelled_success'))
             window.destroy()
             self.load_bookings()
             
@@ -285,7 +305,7 @@ class BookingsFrame(tk.Frame):
     def add_booking(self):
         """Open add booking dialog"""
         booking_window = tk.Toplevel(self)
-        booking_window.title("Create New Booking")
+        booking_window.title(self.language_manager.get_text('create_new_booking'))
         booking_window.geometry("600x700")
         
         # Set icon
@@ -301,7 +321,7 @@ class BookingsFrame(tk.Frame):
         # Form title
         title = tk.Label(
             form_frame,
-            text="Create New Booking",
+            text=self.language_manager.get_text('create_new_booking'),
             font=('Arial', 16, 'bold'),
             fg='#2c3e50'
         )
@@ -335,7 +355,7 @@ class BookingsFrame(tk.Frame):
         # Passenger Selection
         tk.Label(
             scrollable_frame, 
-            text="Passenger:", 
+            text=self.language_manager.get_text('select_passenger') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
         ).grid(row=current_row, column=0, sticky='w', pady=(10, 5))
@@ -351,7 +371,7 @@ class BookingsFrame(tk.Frame):
             font=('Arial', 10)
         )
         passenger_cb.grid(row=current_row, column=1, sticky='w', pady=(10, 5), padx=(10, 0))
-        passenger_cb.set("Select Passenger")
+        passenger_cb.set(self.language_manager.get_text('select_passenger'))
         self.booking_widgets['passenger'] = {
             'widget': passenger_cb,
             'var': passenger_var,
@@ -362,7 +382,7 @@ class BookingsFrame(tk.Frame):
         # Flight Selection
         tk.Label(
             scrollable_frame, 
-            text="Flight:", 
+            text=self.language_manager.get_text('select_flight') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
         ).grid(row=current_row, column=0, sticky='w', pady=5)
@@ -378,7 +398,7 @@ class BookingsFrame(tk.Frame):
             font=('Arial', 10)
         )
         flight_cb.grid(row=current_row, column=1, sticky='w', pady=5, padx=(10, 0))
-        flight_cb.set("Select Flight")
+        flight_cb.set(self.language_manager.get_text('select_flight'))
         self.booking_widgets['flight'] = {
             'widget': flight_cb,
             'var': flight_var,
@@ -404,7 +424,7 @@ class BookingsFrame(tk.Frame):
         # Class Selection
         tk.Label(
             scrollable_frame, 
-            text="Class:", 
+            text=self.language_manager.get_text('seat_class') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
         ).grid(row=current_row, column=0, sticky='w', pady=10)
@@ -420,7 +440,7 @@ class BookingsFrame(tk.Frame):
             font=('Arial', 10)
         )
         class_cb.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
-        class_cb.set("Select Class")
+        class_cb.set(self.language_manager.get_text('select_class'))
         self.booking_widgets['class'] = {
             'widget': class_cb,
             'var': class_var,
@@ -431,7 +451,7 @@ class BookingsFrame(tk.Frame):
         # Terminal Selection
         tk.Label(
             scrollable_frame, 
-            text="Terminal:", 
+            text=self.language_manager.get_text('terminal') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
         ).grid(row=current_row, column=0, sticky='w', pady=10)
@@ -447,7 +467,7 @@ class BookingsFrame(tk.Frame):
             font=('Arial', 10)
         )
         terminal_cb.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
-        terminal_cb.set("Select Terminal")
+        terminal_cb.set(self.language_manager.get_text('select_terminal'))
         self.booking_widgets['terminal'] = {
             'widget': terminal_cb,
             'var': terminal_var,
@@ -458,7 +478,7 @@ class BookingsFrame(tk.Frame):
         # Seat Number
         tk.Label(
             scrollable_frame, 
-            text="Seat Number:", 
+            text=self.language_manager.get_text('seat_number') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
         ).grid(row=current_row, column=0, sticky='w', pady=10)
@@ -479,7 +499,7 @@ class BookingsFrame(tk.Frame):
         # Seat format helper
         seat_helper = tk.Label(
             scrollable_frame,
-            text="Format: 15A, 5B, etc.",
+            text=self.language_manager.get_text('seat_format_helper'),
             font=('Arial', 8),
             foreground='#999'
         )
@@ -489,7 +509,7 @@ class BookingsFrame(tk.Frame):
         # Number of Seats
         tk.Label(
             scrollable_frame, 
-            text="Number of Seats:", 
+            text=self.language_manager.get_text('number_of_seats') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
         ).grid(row=current_row, column=0, sticky='w', pady=10)
@@ -517,7 +537,7 @@ class BookingsFrame(tk.Frame):
         
         tk.Label(
             price_frame,
-            text="Price Calculation:",
+            text=self.language_manager.get_text('price_calculation') + ":",
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50',
             bg='#f8f9fa'
@@ -525,7 +545,7 @@ class BookingsFrame(tk.Frame):
         
         price_display = tk.Label(
             price_frame,
-            text="Select class and seats to see price",
+            text=self.language_manager.get_text('select_class_seats_for_price'),
             font=('Arial', 10),
             foreground='#666',
             bg='#f8f9fa'
@@ -557,14 +577,14 @@ class BookingsFrame(tk.Frame):
         
         ttk.Button(
             button_frame,
-            text="Create Booking",
+            text=self.language_manager.get_text('create_booking'),
             command=lambda: self.create_booking(booking_window),
             width=15
         ).pack(side=tk.LEFT, padx=5)
         
         ttk.Button(
             button_frame,
-            text="Cancel",
+            text=self.language_manager.get_text('cancel'),
             command=booking_window.destroy,
             width=15
         ).pack(side=tk.LEFT, padx=5)
@@ -684,7 +704,7 @@ class BookingsFrame(tk.Frame):
         details_label = self.booking_widgets['flight_details']
         
         selected_text = flight_var.get()
-        if selected_text and selected_text != "Select Flight":
+        if selected_text and selected_text != self.language_manager.get_text('select_flight'):
             # Find the selected flight data
             for flight in flight_data:
                 flight_option = f"{flight['number']} - {flight['route']} ({flight['date']} {flight['time']})"
@@ -706,25 +726,25 @@ class BookingsFrame(tk.Frame):
             class_text = class_var.get()
             seats = int(seats_var.get())
             
-            if class_text and class_text != "Select Class":
+            if class_text and class_text != self.language_manager.get_text('select_class'):
                 # Extract price from class text "Business - $850"
                 for cls in class_data:
                     class_option = f"{cls['name']} - ${cls['price']}"
                     if class_option == class_text:
                         total_price = cls['price'] * seats
                         price_display.config(
-                            text=f"${cls['price']} × {seats} seat(s) = ${total_price}",
+                            text=f"${cls['price']} × {seats} {self.language_manager.get_text('seat_s')} = ${total_price}",
                             foreground='#27ae60'
                         )
                         return
             
             price_display.config(
-                text="Select class and seats to see price",
+                text=self.language_manager.get_text('select_class_seats_for_price'),
                 foreground='#666'
             )
         except ValueError:
             price_display.config(
-                text="Invalid number of seats",
+                text=self.language_manager.get_text('invalid_seat_count'),
                 foreground='red'
             )
 
@@ -743,27 +763,27 @@ class BookingsFrame(tk.Frame):
             validation_msg = self.booking_widgets['validation']
             
             if not passenger_data:
-                validation_msg.config(text="Please select a passenger")
+                validation_msg.config(text=self.language_manager.get_text('select_passenger_validation'))
                 return
                 
             if not flight_data:
-                validation_msg.config(text="Please select a flight")
+                validation_msg.config(text=self.language_manager.get_text('select_flight_validation'))
                 return
                 
             if not class_data:
-                validation_msg.config(text="Please select a class")
+                validation_msg.config(text=self.language_manager.get_text('select_class_validation'))
                 return
                 
             if not terminal_data:
-                validation_msg.config(text="Please select a terminal")
+                validation_msg.config(text=self.language_manager.get_text('select_terminal_validation'))
                 return
                 
             if not seat_number:
-                validation_msg.config(text="Please enter a seat number")
+                validation_msg.config(text=self.language_manager.get_text('enter_seat_number'))
                 return
                 
             if seats_count < 1:
-                validation_msg.config(text="Please enter valid number of seats")
+                validation_msg.config(text=self.language_manager.get_text('invalid_seat_count'))
                 return
             
             # Calculate total price
@@ -800,10 +820,10 @@ class BookingsFrame(tk.Frame):
             
             messagebox.showinfo(
                 "Success", 
-                f"Booking created successfully!\n\n"
-                f"Booking Reference: {booking_ref}\n"
-                f"Ticket Number: {ticket_number}\n"
-                f"Total: ${total_price}"
+                f"{self.language_manager.get_text('booking_created_success')}\n\n"
+                f"{self.language_manager.get_text('booking_reference')}: {booking_ref}\n"
+                f"{self.language_manager.get_text('ticket_number')}: {ticket_number}\n"
+                f"{self.language_manager.get_text('total')}: ${total_price}"
             )
             
             window.destroy()
@@ -818,7 +838,7 @@ class BookingsFrame(tk.Frame):
         passenger_data = self.booking_widgets['passenger']['data']
         
         selected_text = passenger_var.get()
-        if selected_text and selected_text != "Select Passenger":
+        if selected_text and selected_text != self.language_manager.get_text('select_passenger'):
             for passenger in passenger_data:
                 passenger_option = f"{passenger['passport']} - {passenger['name']}"
                 if passenger_option == selected_text:
@@ -831,7 +851,7 @@ class BookingsFrame(tk.Frame):
         flight_data = self.booking_widgets['flight']['data']
         
         selected_text = flight_var.get()
-        if selected_text and selected_text != "Select Flight":
+        if selected_text and selected_text != self.language_manager.get_text('select_flight'):
             for flight in flight_data:
                 flight_option = f"{flight['number']} - {flight['route']} ({flight['date']} {flight['time']})"
                 if flight_option == selected_text:
@@ -844,7 +864,7 @@ class BookingsFrame(tk.Frame):
         class_data = self.booking_widgets['class']['data']
         
         selected_text = class_var.get()
-        if selected_text and selected_text != "Select Class":
+        if selected_text and selected_text != self.language_manager.get_text('select_class'):
             for cls in class_data:
                 class_option = f"{cls['name']} - ${cls['price']}"
                 if class_option == selected_text:
@@ -857,7 +877,7 @@ class BookingsFrame(tk.Frame):
         terminal_data = self.booking_widgets['terminal']['data']
         
         selected_text = terminal_var.get()
-        if selected_text and selected_text != "Select Terminal":
+        if selected_text and selected_text != self.language_manager.get_text('select_terminal'):
             for terminal in terminal_data:
                 terminal_option = f"{terminal['number']} - {terminal['name']}"
                 if terminal_option == selected_text:

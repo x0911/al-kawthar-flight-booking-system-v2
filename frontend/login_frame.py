@@ -4,9 +4,10 @@ from tkinter import messagebox, ttk
 
 
 class LoginFrame(tk.Frame):
-    def __init__(self, parent, login_callback):
+    def __init__(self, parent, login_callback, language_manager):
         super().__init__(parent)
         self.login_callback = login_callback
+        self.language_manager = language_manager
         self.setup_ui()
         
     def setup_ui(self):
@@ -20,7 +21,7 @@ class LoginFrame(tk.Frame):
         # Title
         title_label = tk.Label(
             container, 
-            text="Al Kawthar Flights", 
+            text=self.language_manager.get_text('app_title'), 
             font=('Arial', 24, 'bold'),
             fg='#2c3e50',
             bg='#ffffff'
@@ -29,7 +30,7 @@ class LoginFrame(tk.Frame):
         
         subtitle_label = tk.Label(
             container,
-            text="Management System Login",
+            text=self.language_manager.get_text('login_title'),
             font=('Arial', 14),
             fg='#7f8c8d',
             bg='#ffffff'
@@ -41,13 +42,13 @@ class LoginFrame(tk.Frame):
         form_frame.pack(pady=20)
         
         # Username
-        tk.Label(form_frame, text="Username:", font=('Arial', 11), 
+        tk.Label(form_frame, text=self.language_manager.get_text('username'), font=('Arial', 11), 
                 bg='#ffffff', fg='#2c3e50').grid(row=0, column=0, sticky='w', pady=5)
         self.username_entry = ttk.Entry(form_frame, font=('Arial', 11), width=25)
         self.username_entry.grid(row=0, column=1, pady=5, padx=(10, 0))
         
         # Password
-        tk.Label(form_frame, text="Password:", font=('Arial', 11), 
+        tk.Label(form_frame, text=self.language_manager.get_text('password'), font=('Arial', 11), 
                 bg='#ffffff', fg='#2c3e50').grid(row=1, column=0, sticky='w', pady=5)
         self.password_entry = ttk.Entry(form_frame, show='*', font=('Arial', 11), width=25)
         self.password_entry.grid(row=1, column=1, pady=5, padx=(10, 0))
@@ -55,7 +56,7 @@ class LoginFrame(tk.Frame):
         # Login button
         login_btn = ttk.Button(
             container,
-            text="Login",
+            text=self.language_manager.get_text('login_button'),
             command=self.attempt_login,
             width=20
         )
@@ -64,16 +65,48 @@ class LoginFrame(tk.Frame):
         # Demo credentials note
         demo_label = tk.Label(
             container,
-            text="For demo: Use any credentials",
+            text=self.language_manager.get_text('demo_credentials'),
             font=('Arial', 9),
             fg='#95a5a6',
             bg='#ffffff'
         )
         demo_label.pack(pady=(10, 0))
         
+        # Language selector
+        self.create_language_selector(container)
+        
         # Bind Enter key to login - but only for these specific widgets
         self.username_entry.bind('<Return>', lambda e: self.attempt_login())
         self.password_entry.bind('<Return>', lambda e: self.attempt_login())
+        
+    def create_language_selector(self, parent):
+        """Create language selection dropdown"""
+        lang_frame = tk.Frame(parent, bg='#ffffff')
+        lang_frame.pack(pady=(20, 0))
+        
+        tk.Label(lang_frame, text="Language / اللغة:", 
+                font=('Arial', 9),
+                bg='#ffffff', fg='#666').pack(side=tk.LEFT)
+        
+        lang_var = tk.StringVar(value=self.language_manager.current_language)
+        lang_cb = ttk.Combobox(
+            lang_frame,
+            values=['english', 'arabic'],
+            textvariable=lang_var,
+            state='readonly',
+            width=10,
+            font=('Arial', 9)
+        )
+        lang_cb.pack(side=tk.LEFT, padx=5)
+        
+        lang_cb.bind('<<ComboboxSelected>>', 
+                    lambda e: self.change_language(lang_var.get()))
+        
+    def change_language(self, language):
+        """Change application language"""
+        if self.language_manager.set_language(language):
+            # Recreate the UI with new language
+            self.setup_ui()
         
     def attempt_login(self):
         """Attempt to login user"""

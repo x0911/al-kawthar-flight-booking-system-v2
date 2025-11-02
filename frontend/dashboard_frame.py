@@ -4,10 +4,11 @@ from tkinter import ttk
 
 
 class DashboardFrame(tk.Frame):
-    def __init__(self, parent, user_data, logout_callback):
+    def __init__(self, parent, user_data, logout_callback, language_manager):
         super().__init__(parent)
         self.user_data = user_data
         self.logout_callback = logout_callback
+        self.language_manager = language_manager
         self.setup_ui()
         
     def setup_ui(self):
@@ -22,7 +23,7 @@ class DashboardFrame(tk.Frame):
         # App title and user info
         title_label = tk.Label(
             header_frame,
-            text="Al Kawthar Flights - Management System",
+            text=self.language_manager.get_text('app_title') + " - Management System",
             font=('Arial', 16, 'bold'),
             fg='white',
             bg='#2c3e50'
@@ -31,12 +32,15 @@ class DashboardFrame(tk.Frame):
         
         user_label = tk.Label(
             header_frame,
-            text=f"Welcome, {self.user_data['username']}",
+            text=self.language_manager.get_text('welcome', self.user_data['username']),
             font=('Arial', 11),
             fg='white',
             bg='#2c3e50'
         )
         user_label.pack(side=tk.RIGHT, padx=20, pady=20)
+        
+        # Language selector in header
+        self.create_header_language_selector(header_frame)
         
         # Main content area
         main_container = tk.Frame(self, bg='#f8f9fa')
@@ -49,11 +53,11 @@ class DashboardFrame(tk.Frame):
         
         # Navigation buttons
         nav_buttons = [
-            ("📊 Dashboard", self.show_dashboard),
-            ("🛫 Flights", self.show_flights),
-            ("🎫 Bookings", self.show_bookings),
-            ("👥 Passengers", self.show_passengers),
-            ("📈 Reports", self.show_reports)
+            (self.language_manager.get_text('dashboard'), self.show_dashboard),
+            (self.language_manager.get_text('flights'), self.show_flights),
+            (self.language_manager.get_text('bookings'), self.show_bookings),
+            (self.language_manager.get_text('passengers'), self.show_passengers),
+            (self.language_manager.get_text('reports'), self.show_reports)
         ]
         
         for text, command in nav_buttons:
@@ -84,7 +88,7 @@ class DashboardFrame(tk.Frame):
         # Logout button at bottom of sidebar
         logout_btn = tk.Button(
             sidebar,
-            text="🚪 Logout",
+            text="🚪 " + self.language_manager.get_text('logout'),
             font=('Arial', 11),
             fg='white',
             bg='#e74c3c',
@@ -103,6 +107,31 @@ class DashboardFrame(tk.Frame):
         # Show default dashboard content
         self.show_dashboard_content()
         
+    def create_header_language_selector(self, header_frame):
+        """Create language selector in header"""
+        lang_frame = tk.Frame(header_frame, bg='#2c3e50')
+        lang_frame.pack(side=tk.RIGHT, padx=10, pady=20)
+        
+        lang_var = tk.StringVar(value=self.language_manager.current_language)
+        lang_cb = ttk.Combobox(
+            lang_frame,
+            values=['english', 'arabic'],
+            textvariable=lang_var,
+            state='readonly',
+            width=10,
+            font=('Arial', 9)
+        )
+        lang_cb.pack()
+        
+        lang_cb.bind('<<ComboboxSelected>>', 
+                    lambda e: self.change_language(lang_var.get()))
+        
+    def change_language(self, language):
+        """Change application language"""
+        if self.language_manager.set_language(language):
+            # Recreate the UI with new language
+            self.setup_ui()
+        
     def show_dashboard_content(self):
         """Display dashboard content"""
         self.clear_content()
@@ -110,7 +139,7 @@ class DashboardFrame(tk.Frame):
         # Dashboard title
         title = tk.Label(
             self.content_frame,
-            text="Dashboard Overview",
+            text=self.language_manager.get_text('dashboard') + " Overview",
             font=('Arial', 18, 'bold'),
             bg='white',
             fg='#2c3e50'
@@ -122,8 +151,8 @@ class DashboardFrame(tk.Frame):
         stats_frame.pack(pady=10, padx=20, fill=tk.X)
         
         stats_data = [
-            ("Total Flights", "24", "#3498db"),
-            ("Active Bookings", "156", "#2ecc71"),
+            (self.language_manager.get_text('flights'), "24", "#3498db"),
+            (self.language_manager.get_text('bookings'), "156", "#2ecc71"),
             ("Today's Passengers", "42", "#e74c3c"),
             ("Revenue", "$12,450", "#f39c12")
         ]
@@ -199,13 +228,13 @@ class DashboardFrame(tk.Frame):
         self.show_dashboard_content()
     
     def show_flights(self):
-      """Show flights management view"""
-      self.clear_content()
-      
-      # Use the actual FlightsFrame instead of placeholder
-      from frontend.flights_frame import FlightsFrame
-      flights_frame = FlightsFrame(self.content_frame)
-      flights_frame.pack(fill=tk.BOTH, expand=True)
+        """Show flights management view"""
+        self.clear_content()
+        
+        # Use the actual FlightsFrame instead of placeholder
+        from frontend.flights_frame import FlightsFrame
+        flights_frame = FlightsFrame(self.content_frame, self.language_manager)
+        flights_frame.pack(fill=tk.BOTH, expand=True)
     
     def show_bookings(self):
         """Show bookings management view"""
@@ -213,7 +242,7 @@ class DashboardFrame(tk.Frame):
         
         # Use the actual BookingsFrame instead of placeholder
         from frontend.bookings_frame import BookingsFrame
-        bookings_frame = BookingsFrame(self.content_frame)
+        bookings_frame = BookingsFrame(self.content_frame, self.language_manager)
         bookings_frame.pack(fill=tk.BOTH, expand=True)
     
     def show_passengers(self):
@@ -222,7 +251,7 @@ class DashboardFrame(tk.Frame):
         
         title = tk.Label(
             self.content_frame,
-            text="Passengers Management",
+            text=self.language_manager.get_text('passengers') + " Management",
             font=('Arial', 18, 'bold'),
             bg='white',
             fg='#2c3e50'
@@ -251,7 +280,7 @@ class DashboardFrame(tk.Frame):
         
         title = tk.Label(
             self.content_frame,
-            text="Reports & Analytics",
+            text=self.language_manager.get_text('reports') + " & Analytics",
             font=('Arial', 18, 'bold'),
             bg='white',
             fg='#2c3e50'
@@ -285,6 +314,4 @@ class DashboardFrame(tk.Frame):
         
     def cleanup(self):
         """Clean up resources when frame is destroyed"""
-        # This frame doesn't have any special cleanup needs,
-        # but we include the method for consistency
         pass

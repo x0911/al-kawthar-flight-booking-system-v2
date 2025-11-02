@@ -15,8 +15,9 @@ except ImportError:
     print("Warning: tkcalendar not available. Using fallback date entry.")
 
 class FlightsFrame(tk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, language_manager):
         super().__init__(parent)
+        self.language_manager = language_manager
         self.sort_column = 'flight_number'  # Default sort column
         self.sort_direction = 'ASC'  # Default sort direction
         self.setup_ui()
@@ -32,7 +33,7 @@ class FlightsFrame(tk.Frame):
         
         title = tk.Label(
             header_frame,
-            text="Flights Management",
+            text=self.language_manager.get_text('flight_management'),
             font=('Arial', 18, 'bold'),
             bg='white',
             fg='#2c3e50'
@@ -45,14 +46,14 @@ class FlightsFrame(tk.Frame):
         
         refresh_btn = ttk.Button(
             button_frame,
-            text="Refresh",
+            text=self.language_manager.get_text('refresh'),
             command=self.load_flights
         )
         refresh_btn.pack(side=tk.LEFT, padx=5)
         
         add_btn = ttk.Button(
             button_frame,
-            text="Add Flight",
+            text=self.language_manager.get_text('add_flight'),
             command=self.add_flight
         )
         add_btn.pack(side=tk.LEFT, padx=5)
@@ -61,7 +62,7 @@ class FlightsFrame(tk.Frame):
         search_frame = tk.Frame(self, bg='white')
         search_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        tk.Label(search_frame, text="Search:", bg='white').pack(side=tk.LEFT)
+        tk.Label(search_frame, text=self.language_manager.get_text('search') + ":", bg='white').pack(side=tk.LEFT)
         
         self.search_var = tk.StringVar()
         search_entry = ttk.Entry(
@@ -89,12 +90,12 @@ class FlightsFrame(tk.Frame):
         
         # Define headings with sort indicators
         self.tree.heading('flight_id', text='ID', command=lambda: self.sort_treeview('f.id'))
-        self.tree.heading('flight_number', text='Flight Number', command=lambda: self.sort_treeview('f.flight_number'))
-        self.tree.heading('origin', text='Origin', command=lambda: self.sort_treeview('o_airport.name'))
-        self.tree.heading('destination', text='Destination', command=lambda: self.sort_treeview('d_airport.name'))
-        self.tree.heading('departure', text='Departure', command=lambda: self.sort_treeview('f.departure_date'))
-        self.tree.heading('arrival', text='Arrival', command=lambda: self.sort_treeview('f.arrival_date'))
-        self.tree.heading('status', text='Status', command=lambda: self.sort_treeview('f.status'))
+        self.tree.heading('flight_number', text=self.language_manager.get_text('flight_number'), command=lambda: self.sort_treeview('f.flight_number'))
+        self.tree.heading('origin', text=self.language_manager.get_text('origin'), command=lambda: self.sort_treeview('o_airport.name'))
+        self.tree.heading('destination', text=self.language_manager.get_text('destination'), command=lambda: self.sort_treeview('d_airport.name'))
+        self.tree.heading('departure', text=self.language_manager.get_text('departure'), command=lambda: self.sort_treeview('f.departure_date'))
+        self.tree.heading('arrival', text=self.language_manager.get_text('arrival'), command=lambda: self.sort_treeview('f.arrival_date'))
+        self.tree.heading('status', text=self.language_manager.get_text('status'), command=lambda: self.sort_treeview('f.status'))
         
         # Configure columns
         self.tree.column('flight_id', width=50)
@@ -315,13 +316,13 @@ class FlightsFrame(tk.Frame):
       details_frame.pack(fill=tk.BOTH, expand=True)
       
       labels = [
-          ("Flight ID:", flight_data[0]),
-          ("Flight Number:", flight_data[1]),
-          ("Origin:", flight_data[2]),
-          ("Destination:", flight_data[3]),
-          ("Departure:", flight_data[4]),
-          ("Arrival:", flight_data[5]),
-          ("Status:", flight_data[6])
+          (self.language_manager.get_text('flight_id') + ":", flight_data[0]),
+          (self.language_manager.get_text('flight_number') + ":", flight_data[1]),
+          (self.language_manager.get_text('origin') + ":", flight_data[2]),
+          (self.language_manager.get_text('destination') + ":", flight_data[3]),
+          (self.language_manager.get_text('departure') + ":", flight_data[4]),
+          (self.language_manager.get_text('arrival') + ":", flight_data[5]),
+          (self.language_manager.get_text('status') + ":", flight_data[6])
       ]
       
       for i, (label, value) in enumerate(labels):
@@ -346,7 +347,7 @@ class FlightsFrame(tk.Frame):
       form_frame.pack(fill=tk.BOTH, expand=True)
       
       # Form fields
-      tk.Label(form_frame, text="Add New Flight", font=('Arial', 16, 'bold')).grid(
+      tk.Label(form_frame, text=self.language_manager.get_text('add_flight'), font=('Arial', 16, 'bold')).grid(
           row=0, column=0, columnspan=2, pady=(0, 20))
       
       # Get airports for dropdowns
@@ -359,7 +360,7 @@ class FlightsFrame(tk.Frame):
       default_arrival = default_departure + timedelta(hours=2)
       
       # Flight Number field with helper label
-      tk.Label(form_frame, text="Flight Number:", font=('Arial', 10)).grid(
+      tk.Label(form_frame, text=self.language_manager.get_text('flight_number') + ":", font=('Arial', 10)).grid(
           row=1, column=0, sticky='w', pady=10)
 
       flight_frame = tk.Frame(form_frame)
@@ -371,7 +372,7 @@ class FlightsFrame(tk.Frame):
       # Helper label to show formatted flight number
       self.flight_number_helper = tk.Label(
           flight_frame, 
-          text=" → Will be saved as: AK", 
+          text=" → " + self.language_manager.get_text('will_be_saved_as') + ": AK", 
           font=('Arial', 9), 
           fg='gray'
       )
@@ -382,17 +383,17 @@ class FlightsFrame(tk.Frame):
 
       # Store the flight number entry
       self.entry_widgets = {}
-      self.entry_widgets["Flight Number:"] = self.flight_number_entry
+      self.entry_widgets[self.language_manager.get_text('flight_number') + ":"] = self.flight_number_entry
       self.airport_data = airports
       
       # Rest of the fields
       fields = [
-          ("Origin Airport:", "combobox"),
-          ("Destination Airport:", "combobox"),
-          ("Departure Date:", "date_picker"),
-          ("Departure Time:", "time_picker"),
-          ("Arrival Date:", "date_picker"),
-          ("Arrival Time:", "time_picker")
+          (self.language_manager.get_text('origin_airport') + ":", "combobox"),
+          (self.language_manager.get_text('destination_airport') + ":", "combobox"),
+          (self.language_manager.get_text('departure_date') + ":", "date_picker"),
+          (self.language_manager.get_text('departure_time') + ":", "time_picker"),
+          (self.language_manager.get_text('arrival_date') + ":", "date_picker"),
+          (self.language_manager.get_text('arrival_time') + ":", "time_picker")
       ]
       
       row = 2  # Start from row 2 since flight number is at row 1
@@ -415,7 +416,7 @@ class FlightsFrame(tk.Frame):
           elif widget_type == "date_picker":
               if TKCALENDAR_AVAILABLE:
                   # Use tkcalendar DateEntry
-                  if "Departure Date:" in self.entry_widgets:
+                  if self.language_manager.get_text('departure_date') + ":" in self.entry_widgets:
                       default_date = default_arrival
                   else:
                       default_date = default_departure
@@ -437,7 +438,7 @@ class FlightsFrame(tk.Frame):
                   # Fallback: Simple date entry with validation
                   date_entry = ttk.Entry(form_frame, width=25, font=('Arial', 10))
                   date_entry.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
-                  if "Departure Date:" in self.entry_widgets:
+                  if self.language_manager.get_text('departure_date') + ":" in self.entry_widgets:
                       date_entry.insert(0, default_arrival.strftime("%Y-%m-%d"))
                   else:
                       date_entry.insert(0, default_departure.strftime("%Y-%m-%d"))
@@ -453,10 +454,10 @@ class FlightsFrame(tk.Frame):
               time_frame.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
               
               # Hour spinbox
-              hour_label = tk.Label(time_frame, text="Hour:", font=('Arial', 9))
+              hour_label = tk.Label(time_frame, text=self.language_manager.get_text('hour') + ":", font=('Arial', 9))
               hour_label.pack(side=tk.LEFT)
               
-              default_hour = "08" if "Departure Time:" not in self.entry_widgets else "10"
+              default_hour = "08" if self.language_manager.get_text('departure_time') + ":" not in self.entry_widgets else "10"
               hour_var = tk.StringVar(value=default_hour)
               hour_spin = ttk.Spinbox(
                   time_frame,
@@ -470,7 +471,7 @@ class FlightsFrame(tk.Frame):
               hour_spin.pack(side=tk.LEFT, padx=5)
               
               # Minute spinbox
-              minute_label = tk.Label(time_frame, text="Min:", font=('Arial', 9))
+              minute_label = tk.Label(time_frame, text=self.language_manager.get_text('minute') + ":", font=('Arial', 9))
               minute_label.pack(side=tk.LEFT, padx=(10, 0))
               
               minute_var = tk.StringVar(value="00")
@@ -512,9 +513,9 @@ class FlightsFrame(tk.Frame):
       button_frame = tk.Frame(form_frame)
       button_frame.grid(row=row, column=0, columnspan=2, pady=20)
       
-      ttk.Button(button_frame, text="Save Flight", 
+      ttk.Button(button_frame, text=self.language_manager.get_text('save_flight'), 
                 command=lambda: self.validate_and_save_flight(add_window)).pack(side=tk.LEFT, padx=5)
-      ttk.Button(button_frame, text="Cancel", 
+      ttk.Button(button_frame, text=self.language_manager.get_text('cancel'), 
                 command=add_window.destroy).pack(side=tk.LEFT, padx=5)
       
     def get_airports(self):
@@ -548,56 +549,56 @@ class FlightsFrame(tk.Frame):
       """Validate form data and save flight"""
       try:
           # Get form values
-          flight_number_input = self.entry_widgets["Flight Number:"].get().strip()
-          origin_text = self.entry_widgets["Origin Airport:"].get().strip()
-          destination_text = self.entry_widgets["Destination Airport:"].get().strip()
+          flight_number_input = self.entry_widgets[self.language_manager.get_text('flight_number') + ":"].get().strip()
+          origin_text = self.entry_widgets[self.language_manager.get_text('origin_airport') + ":"].get().strip()
+          destination_text = self.entry_widgets[self.language_manager.get_text('destination_airport') + ":"].get().strip()
           
           # Get date values (handle both tkcalendar and fallback)
-          dep_date_widget = self.entry_widgets["Departure Date:"]
+          dep_date_widget = self.entry_widgets[self.language_manager.get_text('departure_date') + ":"]
           if TKCALENDAR_AVAILABLE and hasattr(dep_date_widget, 'get_date'):
               dep_date = dep_date_widget.get_date().strftime("%Y-%m-%d")
           else:
               dep_date = self.get_date_from_widgets(dep_date_widget)
               if not dep_date:
-                  self.validation_label.config(text="Please select a valid departure date!")
+                  self.validation_label.config(text=self.language_manager.get_text('select_valid_departure_date'))
                   return
           
-          arr_date_widget = self.entry_widgets["Arrival Date:"]
+          arr_date_widget = self.entry_widgets[self.language_manager.get_text('arrival_date') + ":"]
           if TKCALENDAR_AVAILABLE and hasattr(arr_date_widget, 'get_date'):
               arr_date = arr_date_widget.get_date().strftime("%Y-%m-%d")
           else:
               arr_date = self.get_date_from_widgets(arr_date_widget)
               if not arr_date:
-                  self.validation_label.config(text="Please select a valid arrival date!")
+                  self.validation_label.config(text=self.language_manager.get_text('select_valid_arrival_date'))
                   return
           
           # Get time values from spinboxes
-          dep_time_widgets = self.entry_widgets["Departure Time:"]
+          dep_time_widgets = self.entry_widgets[self.language_manager.get_text('departure_time') + ":"]
           dep_time = f"{dep_time_widgets['hour_var'].get()}:{dep_time_widgets['minute_var'].get()}"
           
-          arr_time_widgets = self.entry_widgets["Arrival Time:"]
+          arr_time_widgets = self.entry_widgets[self.language_manager.get_text('arrival_time') + ":"]
           arr_time = f"{arr_time_widgets['hour_var'].get()}:{arr_time_widgets['minute_var'].get()}"
           
           # Validate required fields
           if not all([flight_number_input, origin_text, destination_text, dep_date, arr_date]):
-              self.validation_label.config(text="All fields are required!")
+              self.validation_label.config(text=self.language_manager.get_text('all_fields_required'))
               return
           
           # Process and validate flight number
           flight_number = self.process_flight_number(flight_number_input)
           if not flight_number:
-              self.validation_label.config(text="Please enter a valid flight number (numbers only)")
+              self.validation_label.config(text=self.language_manager.get_text('enter_valid_flight_number'))
               return
           
           # Check if flight number already exists
           if self.flight_number_exists(flight_number, dep_date):
-              self.validation_label.config(text=f"Flight {flight_number} already exists on {dep_date}!")
+              self.validation_label.config(text=self.language_manager.get_text('flight_already_exists').format(flight_number, dep_date))
               return
           
           # Validate date format (for fallback)
           if not TKCALENDAR_AVAILABLE:
               if not self.is_valid_date(dep_date) or not self.is_valid_date(arr_date):
-                  self.validation_label.config(text="Please use YYYY-MM-DD format for dates!")
+                  self.validation_label.config(text=self.language_manager.get_text('use_yyyy_mm_dd_format'))
                   return
           
           # Validate airport selection
@@ -605,16 +606,16 @@ class FlightsFrame(tk.Frame):
           destination_airport = self.get_airport_from_selection(destination_text)
           
           if not origin_airport:
-              self.validation_label.config(text="Please select a valid origin airport!")
+              self.validation_label.config(text=self.language_manager.get_text('select_valid_origin_airport'))
               return
               
           if not destination_airport:
-              self.validation_label.config(text="Please select a valid destination airport!")
+              self.validation_label.config(text=self.language_manager.get_text('select_valid_destination_airport'))
               return
           
           # Validate that origin and destination are different
           if origin_airport['id'] == destination_airport['id']:
-              self.validation_label.config(text="Origin and destination airports cannot be the same!")
+              self.validation_label.config(text=self.language_manager.get_text('origin_destination_different'))
               return
           
           # Validate date/time logic
@@ -624,7 +625,7 @@ class FlightsFrame(tk.Frame):
               arr_datetime = datetime.strptime(f"{arr_date} {arr_time}", "%Y-%m-%d %H:%M")
               
               if arr_datetime <= dep_datetime:
-                  self.validation_label.config(text="Arrival must be after departure!")
+                  self.validation_label.config(text=self.language_manager.get_text('arrival_after_departure'))
                   return
                   
           except ValueError as e:
@@ -826,12 +827,12 @@ class FlightsFrame(tk.Frame):
           input_text = self.flight_number_entry.get().strip()
           if input_text.isdigit():
               self.flight_number_helper.config(
-                  text=f" → Will be saved as: AK{input_text}", 
+                  text=f" → {self.language_manager.get_text('will_be_saved_as')}: AK{input_text}", 
                   fg='green'
               )
           else:
               self.flight_number_helper.config(
-                  text=" → Enter numbers only", 
+                  text=f" → {self.language_manager.get_text('enter_numbers_only')}", 
                   fg='red'
               )
       except:
