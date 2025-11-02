@@ -36,13 +36,20 @@ class FlightsFrame(tk.Frame):
             text=self.language_manager.get_text('flight_management'),
             font=('Arial', 18, 'bold'),
             bg='white',
-            fg='#2c3e50'
+            fg='#2c3e50',
+            anchor='w' if not self.language_manager.is_rtl() else 'e'
         )
-        title.pack(side=tk.LEFT)
+        if self.language_manager.is_rtl():
+            title.pack(side=tk.RIGHT)
+        else:
+            title.pack(side=tk.LEFT)
         
         # Action buttons
         button_frame = tk.Frame(header_frame, bg='white')
-        button_frame.pack(side=tk.RIGHT)
+        if self.language_manager.is_rtl():
+            button_frame.pack(side=tk.LEFT)
+        else:
+            button_frame.pack(side=tk.RIGHT)
         
         refresh_btn = ttk.Button(
             button_frame,
@@ -62,7 +69,11 @@ class FlightsFrame(tk.Frame):
         search_frame = tk.Frame(self, bg='white')
         search_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        tk.Label(search_frame, text=self.language_manager.get_text('search') + ":", bg='white').pack(side=tk.LEFT)
+        search_label = tk.Label(search_frame, text=self.language_manager.get_text('search') + ":", bg='white')
+        if self.language_manager.is_rtl():
+            search_label.pack(side=tk.RIGHT)
+        else:
+            search_label.pack(side=tk.LEFT)
         
         self.search_var = tk.StringVar()
         search_entry = ttk.Entry(
@@ -70,7 +81,10 @@ class FlightsFrame(tk.Frame):
             textvariable=self.search_var,
             width=30
         )
-        search_entry.pack(side=tk.LEFT, padx=5)
+        if self.language_manager.is_rtl():
+            search_entry.pack(side=tk.RIGHT, padx=5)
+        else:
+            search_entry.pack(side=tk.LEFT, padx=5)
         search_entry.bind('<KeyRelease>', self.on_search)
         
         # Flights table
@@ -110,14 +124,27 @@ class FlightsFrame(tk.Frame):
         scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
         
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        if self.language_manager.is_rtl():
+            scrollbar.pack(side=tk.LEFT, fill=tk.Y)
+            self.tree.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        else:
+            self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
         # Bind double-click event
         self.tree.bind('<Double-1>', self.on_flight_select)
         
+        # Apply RTL to all widgets (AFTER tree is created)
+        self.language_manager.apply_rtl_layout(self)
+        
         # Update sort indicator on initial load
         self.update_sort_indicator()
+        
+    def apply_rtl_layout(self):
+        """Apply RTL specific layout changes - Now called after UI setup"""
+        # This method is kept for backward compatibility but the actual RTL
+        # application is now handled by the language_manager.apply_rtl_layout()
+        pass
         
     def sort_treeview(self, column):
         """Sort treeview by column"""
@@ -209,7 +236,8 @@ class FlightsFrame(tk.Frame):
                 
             # Show message if no flights
             if not flights:
-                self.tree.insert('', tk.END, values=("No flights found", "", "", "", "", "", ""))
+                no_flights_text = self.language_manager.get_text('no_flights_found')
+                self.tree.insert('', tk.END, values=(no_flights_text, "", "", "", "", "", ""))
                 
         except Exception as e:
             messagebox.showerror("Database Error", f"Failed to load flights: {e}")
@@ -261,7 +289,8 @@ class FlightsFrame(tk.Frame):
               
           # Show message if no results
           if not flights:
-              self.tree.insert('', tk.END, values=("No flights found", "", "", "", "", "", ""))
+              no_flights_text = self.language_manager.get_text('no_flights_found')
+              self.tree.insert('', tk.END, values=(no_flights_text, "", "", "", "", "", ""))
               
       except Exception as e:
           messagebox.showerror("Search Error", f"Failed to search flights: {e}")
@@ -302,7 +331,7 @@ class FlightsFrame(tk.Frame):
           return
           
       details_window = tk.Toplevel(self)
-      details_window.title("Flight Details")
+      details_window.title(self.language_manager.get_text('flight_details'))
       details_window.geometry("400x300")
       
       # Set icon for details window too
@@ -310,6 +339,10 @@ class FlightsFrame(tk.Frame):
       
       # Center the window (manual calculation instead of eval)
       self.center_window(details_window)
+      
+      # Apply RTL to details window
+      if self.language_manager.is_rtl():
+          self.language_manager.apply_rtl_layout(details_window)
       
       # Flight details
       details_frame = tk.Frame(details_window, padx=20, pady=20)
@@ -326,15 +359,20 @@ class FlightsFrame(tk.Frame):
       ]
       
       for i, (label, value) in enumerate(labels):
-          tk.Label(details_frame, text=label, font=('Arial', 10, 'bold')).grid(
-              row=i, column=0, sticky='w', pady=5)
-          tk.Label(details_frame, text=value).grid(
-              row=i, column=1, sticky='w', pady=5, padx=(10, 0))
+          label_widget = tk.Label(details_frame, text=label, font=('Arial', 10, 'bold'))
+          value_widget = tk.Label(details_frame, text=value)
+          
+          if self.language_manager.is_rtl():
+              label_widget.grid(row=i, column=1, sticky='e', pady=5, padx=(0, 10))
+              value_widget.grid(row=i, column=0, sticky='w', pady=5)
+          else:
+              label_widget.grid(row=i, column=0, sticky='w', pady=5)
+              value_widget.grid(row=i, column=1, sticky='w', pady=5, padx=(10, 0))
     
     def add_flight(self):
       """Open add flight dialog with proper date/time pickers"""
       add_window = tk.Toplevel(self)
-      add_window.title("Add New Flight")
+      add_window.title(self.language_manager.get_text('add_flight'))
       add_window.geometry("550x600")  # Slightly wider for the helper text
       
       # Set icon for the dialog window too
@@ -343,12 +381,20 @@ class FlightsFrame(tk.Frame):
       # Center the window
       self.center_window(add_window)
       
+      # Apply RTL to add flight window
+      if self.language_manager.is_rtl():
+          self.language_manager.apply_rtl_layout(add_window)
+      
       form_frame = tk.Frame(add_window, padx=20, pady=20)
       form_frame.pack(fill=tk.BOTH, expand=True)
       
-      # Form fields
-      tk.Label(form_frame, text=self.language_manager.get_text('add_flight'), font=('Arial', 16, 'bold')).grid(
-          row=0, column=0, columnspan=2, pady=(0, 20))
+      # Form title
+      form_title = tk.Label(
+          form_frame,
+          text=self.language_manager.get_text('add_flight'),
+          font=('Arial', 16, 'bold')
+      )
+      form_title.grid(row=0, column=0, columnspan=2, pady=(0, 20))
       
       # Get airports for dropdowns
       airports = self.get_airports()
@@ -360,11 +406,17 @@ class FlightsFrame(tk.Frame):
       default_arrival = default_departure + timedelta(hours=2)
       
       # Flight Number field with helper label
-      tk.Label(form_frame, text=self.language_manager.get_text('flight_number') + ":", font=('Arial', 10)).grid(
-          row=1, column=0, sticky='w', pady=10)
+      flight_number_label = tk.Label(form_frame, text=self.language_manager.get_text('flight_number') + ":", font=('Arial', 10))
+      if self.language_manager.is_rtl():
+          flight_number_label.grid(row=1, column=1, sticky='e', pady=10)
+      else:
+          flight_number_label.grid(row=1, column=0, sticky='w', pady=10)
 
       flight_frame = tk.Frame(form_frame)
-      flight_frame.grid(row=1, column=1, sticky='w', pady=10, padx=(10, 0))
+      if self.language_manager.is_rtl():
+          flight_frame.grid(row=1, column=0, sticky='e', pady=10, padx=(0, 10))
+      else:
+          flight_frame.grid(row=1, column=1, sticky='w', pady=10, padx=(10, 0))
 
       self.flight_number_entry = ttk.Entry(flight_frame, width=15, font=('Arial', 10))
       self.flight_number_entry.pack(side=tk.LEFT)
@@ -398,8 +450,11 @@ class FlightsFrame(tk.Frame):
       
       row = 2  # Start from row 2 since flight number is at row 1
       for label, widget_type in fields:
-          tk.Label(form_frame, text=label, font=('Arial', 10)).grid(
-              row=row, column=0, sticky='w', pady=10)
+          field_label = tk.Label(form_frame, text=label, font=('Arial', 10))
+          if self.language_manager.is_rtl():
+              field_label.grid(row=row, column=1, sticky='e', pady=10)
+          else:
+              field_label.grid(row=row, column=0, sticky='w', pady=10)
           
           if widget_type == "combobox":
               combobox = ttk.Combobox(
@@ -409,7 +464,10 @@ class FlightsFrame(tk.Frame):
                   font=('Arial', 10),
                   state='readonly'
               )
-              combobox.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
+              if self.language_manager.is_rtl():
+                  combobox.grid(row=row, column=0, sticky='e', pady=10, padx=(0, 10))
+              else:
+                  combobox.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
               combobox.set("")
               self.entry_widgets[label] = combobox
               
@@ -432,12 +490,18 @@ class FlightsFrame(tk.Frame):
                       font=('Arial', 10)
                   )
                   date_entry.set_date(default_date)
-                  date_entry.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
+                  if self.language_manager.is_rtl():
+                      date_entry.grid(row=row, column=0, sticky='e', pady=10, padx=(0, 10))
+                  else:
+                      date_entry.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
                   self.entry_widgets[label] = date_entry
               else:
                   # Fallback: Simple date entry with validation
                   date_entry = ttk.Entry(form_frame, width=25, font=('Arial', 10))
-                  date_entry.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
+                  if self.language_manager.is_rtl():
+                      date_entry.grid(row=row, column=0, sticky='e', pady=10, padx=(0, 10))
+                  else:
+                      date_entry.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
                   if self.language_manager.get_text('departure_date') + ":" in self.entry_widgets:
                       date_entry.insert(0, default_arrival.strftime("%Y-%m-%d"))
                   else:
@@ -451,7 +515,10 @@ class FlightsFrame(tk.Frame):
               
           elif widget_type == "time_picker":
               time_frame = tk.Frame(form_frame)
-              time_frame.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
+              if self.language_manager.is_rtl():
+                  time_frame.grid(row=row, column=0, sticky='e', pady=10, padx=(0, 10))
+              else:
+                  time_frame.grid(row=row, column=1, sticky='w', pady=10, padx=(10, 0))
               
               # Hour spinbox
               hour_label = tk.Label(time_frame, text=self.language_manager.get_text('hour') + ":", font=('Arial', 9))
@@ -513,10 +580,13 @@ class FlightsFrame(tk.Frame):
       button_frame = tk.Frame(form_frame)
       button_frame.grid(row=row, column=0, columnspan=2, pady=20)
       
-      ttk.Button(button_frame, text=self.language_manager.get_text('save_flight'), 
-                command=lambda: self.validate_and_save_flight(add_window)).pack(side=tk.LEFT, padx=5)
-      ttk.Button(button_frame, text=self.language_manager.get_text('cancel'), 
-                command=add_window.destroy).pack(side=tk.LEFT, padx=5)
+      save_btn = ttk.Button(button_frame, text=self.language_manager.get_text('save_flight'), 
+                command=lambda: self.validate_and_save_flight(add_window))
+      save_btn.pack(side=tk.LEFT, padx=5)
+      
+      cancel_btn = ttk.Button(button_frame, text=self.language_manager.get_text('cancel'), 
+                command=add_window.destroy)
+      cancel_btn.pack(side=tk.LEFT, padx=5)
       
     def get_airports(self):
       """Get list of airports from database"""

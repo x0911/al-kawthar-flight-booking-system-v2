@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # frontend/language_manager.py
 
+import tkinter as tk
+from tkinter import ttk
+
 class LanguageManager:
     def __init__(self):
         self.current_language = 'english'
@@ -40,7 +43,7 @@ class LanguageManager:
                 'origin_airport': 'Origin Airport',
                 'destination_airport': 'Destination Airport',
                 'departure_date': 'Departure Date',
-                'departure_time': 'Departure Time', 
+                'departure_time': 'Depature Time', 
                 'arrival_date': 'Arrival Date',
                 'arrival_time': 'Arrival Time',
                 'save_flight': 'Save Flight',
@@ -117,7 +120,10 @@ class LanguageManager:
                 'seat_s': 'seat(s)',
                 'route': 'Route',
                 'seat_count': 'Seat Count',
-                'total_price': 'Total Price'
+                'total_price': 'Total Price',
+                'today_passengers': "Today's Passengers",
+                'revenue': "Revenue",
+                'recent_activity': "Recent Activity",
             },
             'arabic': {
                 'app_title': 'طيران الكوثر',
@@ -227,7 +233,10 @@ class LanguageManager:
                 'seat_s': 'مقعد(مقاعد)',
                 'route': 'الطريق',
                 'seat_count': 'عدد المقاعد',
-                'total_price': 'السعر الإجمالي'
+                'total_price': 'السعر الإجمالي',
+                'today_passengers': "مسافرو اليوم",
+                'revenue': "الإيرادات",
+                'recent_activity': "النشاط الأخير"
             },
         }
     
@@ -255,3 +264,44 @@ class LanguageManager:
     def get_supported_languages(self):
         """Get list of supported languages"""
         return list(self.translations.keys())
+    
+    def is_rtl(self):
+        """Check if current language is RTL (Arabic)"""
+        return self.current_language == 'arabic'
+    
+    def apply_rtl_layout(self, widget):
+        """Apply RTL layout to widget if current language is Arabic"""
+        if not self.is_rtl():
+            return
+            
+        try:
+            self._apply_rtl_recursive(widget)
+        except Exception as e:
+            print(f"Error applying RTL layout: {e}")
+    
+    def _apply_rtl_recursive(self, widget):
+        """Recursively apply RTL layout to widget and its children"""
+        try:
+            # Apply RTL to current widget
+            self._apply_rtl_to_single_widget(widget)
+            
+            # Apply to all children recursively
+            for child in widget.winfo_children():
+                self._apply_rtl_recursive(child)
+                
+        except:
+            pass  # Ignore errors for widgets that can't be processed
+    
+    def _apply_rtl_to_single_widget(self, widget):
+        """Apply RTL settings to a single widget"""
+        try:
+            if isinstance(widget, (tk.Label, tk.Button)):
+                widget.config(anchor='e', justify='right')
+            elif isinstance(widget, (ttk.Entry, ttk.Combobox)):
+                widget.config(justify='right')
+            elif isinstance(widget, ttk.Treeview):
+                # Change column alignment to right
+                for col in widget['columns']:
+                    widget.heading(col, anchor='e')
+        except:
+            pass

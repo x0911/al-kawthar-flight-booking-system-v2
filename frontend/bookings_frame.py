@@ -25,13 +25,20 @@ class BookingsFrame(tk.Frame):
           text=self.language_manager.get_text('booking_management'),
           font=('Arial', 18, 'bold'),
           bg='white',
-          fg='#2c3e50'
+          fg='#2c3e50',
+          anchor='w' if not self.language_manager.is_rtl() else 'e'
       )
-      title.pack(side=tk.LEFT)
+      if self.language_manager.is_rtl():
+          title.pack(side=tk.RIGHT)
+      else:
+          title.pack(side=tk.LEFT)
       
       # Action buttons
       button_frame = tk.Frame(header_frame, bg='white')
-      button_frame.pack(side=tk.RIGHT)
+      if self.language_manager.is_rtl():
+          button_frame.pack(side=tk.LEFT)
+      else:
+          button_frame.pack(side=tk.RIGHT)
       
       refresh_btn = ttk.Button(
           button_frame,
@@ -51,7 +58,11 @@ class BookingsFrame(tk.Frame):
       search_frame = tk.Frame(self, bg='white')
       search_frame.pack(fill=tk.X, padx=20, pady=10)
       
-      tk.Label(search_frame, text=self.language_manager.get_text('search') + ":", bg='white').pack(side=tk.LEFT)
+      search_label = tk.Label(search_frame, text=self.language_manager.get_text('search') + ":", bg='white')
+      if self.language_manager.is_rtl():
+          search_label.pack(side=tk.RIGHT)
+      else:
+          search_label.pack(side=tk.LEFT)
       
       self.search_var = tk.StringVar()
       search_entry = ttk.Entry(
@@ -59,7 +70,10 @@ class BookingsFrame(tk.Frame):
           textvariable=self.search_var,
           width=30
       )
-      search_entry.pack(side=tk.LEFT, padx=5)
+      if self.language_manager.is_rtl():
+          search_entry.pack(side=tk.RIGHT, padx=5)
+      else:
+          search_entry.pack(side=tk.LEFT, padx=5)
       search_entry.bind('<KeyRelease>', self.on_search)
       
       # Bookings table
@@ -101,11 +115,18 @@ class BookingsFrame(tk.Frame):
       scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
       self.tree.configure(yscrollcommand=scrollbar.set)
       
-      self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-      scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+      if self.language_manager.is_rtl():
+          scrollbar.pack(side=tk.LEFT, fill=tk.Y)
+          self.tree.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+      else:
+          self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+          scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
       
       # Bind double-click event
       self.tree.bind('<Double-1>', self.on_booking_select)
+      
+      # Apply RTL to all widgets (AFTER all widgets are created)
+      self.language_manager.apply_rtl_layout(self)
         
     def load_bookings(self):
       """Load bookings from database"""
@@ -240,6 +261,10 @@ class BookingsFrame(tk.Frame):
         # Center the window
         self.center_window(details_window)
         
+        # Apply RTL to details window
+        if self.language_manager.is_rtl():
+            self.language_manager.apply_rtl_layout(details_window)
+        
         # Booking details
         details_frame = tk.Frame(details_window, padx=20, pady=20)
         details_frame.pack(fill=tk.BOTH, expand=True)
@@ -260,10 +285,15 @@ class BookingsFrame(tk.Frame):
             labels.append((self.language_manager.get_text('status') + ":", booking_data[7]))
         
         for i, (label, value) in enumerate(labels):
-            tk.Label(details_frame, text=label, font=('Arial', 10, 'bold')).grid(
-                row=i, column=0, sticky='w', pady=5)
-            tk.Label(details_frame, text=value).grid(
-                row=i, column=1, sticky='w', pady=5, padx=(10, 0))
+            label_widget = tk.Label(details_frame, text=label, font=('Arial', 10, 'bold'))
+            value_widget = tk.Label(details_frame, text=value)
+            
+            if self.language_manager.is_rtl():
+                label_widget.grid(row=i, column=1, sticky='e', pady=5, padx=(0, 10))
+                value_widget.grid(row=i, column=0, sticky='w', pady=5)
+            else:
+                label_widget.grid(row=i, column=0, sticky='w', pady=5)
+                value_widget.grid(row=i, column=1, sticky='w', pady=5, padx=(10, 0))
         
         # Action buttons
         button_frame = tk.Frame(details_frame)
@@ -271,11 +301,13 @@ class BookingsFrame(tk.Frame):
         
         # Only show cancel button if status is available and is 'confirmed'
         if len(booking_data) > 7 and booking_data[7] == 'confirmed':
-            ttk.Button(button_frame, text=self.language_manager.get_text('cancel_booking'), 
-                    command=lambda: self.cancel_booking(booking_data[0], details_window)).pack(side=tk.LEFT, padx=5)
+            cancel_btn = ttk.Button(button_frame, text=self.language_manager.get_text('cancel_booking'), 
+                    command=lambda: self.cancel_booking(booking_data[0], details_window))
+            cancel_btn.pack(side=tk.LEFT, padx=5)
         
-        ttk.Button(button_frame, text=self.language_manager.get_text('close'), 
-                command=details_window.destroy).pack(side=tk.LEFT, padx=5)
+        close_btn = ttk.Button(button_frame, text=self.language_manager.get_text('close'), 
+                command=details_window.destroy)
+        close_btn.pack(side=tk.LEFT, padx=5)
     
     def cancel_booking(self, booking_ref, window):
         """Cancel a booking"""
@@ -315,6 +347,10 @@ class BookingsFrame(tk.Frame):
         # Center the window
         self.center_window(booking_window)
         
+        # Apply RTL to booking window
+        if self.language_manager.is_rtl():
+            self.language_manager.apply_rtl_layout(booking_window)
+        
         form_frame = tk.Frame(booking_window, padx=20, pady=20)
         form_frame.pack(fill=tk.BOTH, expand=True)
         
@@ -353,12 +389,16 @@ class BookingsFrame(tk.Frame):
         current_row = 0
         
         # Passenger Selection
-        tk.Label(
+        passenger_label = tk.Label(
             scrollable_frame, 
             text=self.language_manager.get_text('select_passenger') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
-        ).grid(row=current_row, column=0, sticky='w', pady=(10, 5))
+        )
+        if self.language_manager.is_rtl():
+            passenger_label.grid(row=current_row, column=1, sticky='e', pady=(10, 5))
+        else:
+            passenger_label.grid(row=current_row, column=0, sticky='w', pady=(10, 5))
         
         passenger_names = [f"{p['passport']} - {p['name']}" for p in passengers]
         passenger_var = tk.StringVar()
@@ -370,7 +410,10 @@ class BookingsFrame(tk.Frame):
             width=40,
             font=('Arial', 10)
         )
-        passenger_cb.grid(row=current_row, column=1, sticky='w', pady=(10, 5), padx=(10, 0))
+        if self.language_manager.is_rtl():
+            passenger_cb.grid(row=current_row, column=0, sticky='e', pady=(10, 5), padx=(0, 10))
+        else:
+            passenger_cb.grid(row=current_row, column=1, sticky='w', pady=(10, 5), padx=(10, 0))
         passenger_cb.set(self.language_manager.get_text('select_passenger'))
         self.booking_widgets['passenger'] = {
             'widget': passenger_cb,
@@ -380,12 +423,16 @@ class BookingsFrame(tk.Frame):
         current_row += 1
         
         # Flight Selection
-        tk.Label(
+        flight_label = tk.Label(
             scrollable_frame, 
             text=self.language_manager.get_text('select_flight') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
-        ).grid(row=current_row, column=0, sticky='w', pady=5)
+        )
+        if self.language_manager.is_rtl():
+            flight_label.grid(row=current_row, column=1, sticky='e', pady=5)
+        else:
+            flight_label.grid(row=current_row, column=0, sticky='w', pady=5)
         
         flight_options = [f"{f['number']} - {f['route']} ({f['date']} {f['time']})" for f in flights]
         flight_var = tk.StringVar()
@@ -397,7 +444,10 @@ class BookingsFrame(tk.Frame):
             width=40,
             font=('Arial', 10)
         )
-        flight_cb.grid(row=current_row, column=1, sticky='w', pady=5, padx=(10, 0))
+        if self.language_manager.is_rtl():
+            flight_cb.grid(row=current_row, column=0, sticky='e', pady=5, padx=(0, 10))
+        else:
+            flight_cb.grid(row=current_row, column=1, sticky='w', pady=5, padx=(10, 0))
         flight_cb.set(self.language_manager.get_text('select_flight'))
         self.booking_widgets['flight'] = {
             'widget': flight_cb,
@@ -412,9 +462,12 @@ class BookingsFrame(tk.Frame):
             font=('Arial', 9),
             foreground='#666',
             wraplength=400,
-            justify=tk.LEFT
+            justify=tk.LEFT if not self.language_manager.is_rtl() else tk.RIGHT
         )
-        flight_details.grid(row=current_row + 1, column=1, sticky='w', pady=(2, 10), padx=(10, 0))
+        if self.language_manager.is_rtl():
+            flight_details.grid(row=current_row + 1, column=0, sticky='e', pady=(2, 10), padx=(0, 10))
+        else:
+            flight_details.grid(row=current_row + 1, column=1, sticky='w', pady=(2, 10), padx=(10, 0))
         self.booking_widgets['flight_details'] = flight_details
         
         # Update flight details when flight is selected
@@ -422,12 +475,16 @@ class BookingsFrame(tk.Frame):
         current_row += 2
         
         # Class Selection
-        tk.Label(
+        class_label = tk.Label(
             scrollable_frame, 
             text=self.language_manager.get_text('seat_class') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
-        ).grid(row=current_row, column=0, sticky='w', pady=10)
+        )
+        if self.language_manager.is_rtl():
+            class_label.grid(row=current_row, column=1, sticky='e', pady=10)
+        else:
+            class_label.grid(row=current_row, column=0, sticky='w', pady=10)
         
         class_names = [f"{c['name']} - ${c['price']}" for c in classes]
         class_var = tk.StringVar()
@@ -439,7 +496,10 @@ class BookingsFrame(tk.Frame):
             width=25,
             font=('Arial', 10)
         )
-        class_cb.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
+        if self.language_manager.is_rtl():
+            class_cb.grid(row=current_row, column=0, sticky='e', pady=10, padx=(0, 10))
+        else:
+            class_cb.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
         class_cb.set(self.language_manager.get_text('select_class'))
         self.booking_widgets['class'] = {
             'widget': class_cb,
@@ -449,12 +509,16 @@ class BookingsFrame(tk.Frame):
         current_row += 1
         
         # Terminal Selection
-        tk.Label(
+        terminal_label = tk.Label(
             scrollable_frame, 
             text=self.language_manager.get_text('terminal') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
-        ).grid(row=current_row, column=0, sticky='w', pady=10)
+        )
+        if self.language_manager.is_rtl():
+            terminal_label.grid(row=current_row, column=1, sticky='e', pady=10)
+        else:
+            terminal_label.grid(row=current_row, column=0, sticky='w', pady=10)
         
         terminal_names = [f"{t['number']} - {t['name']}" for t in terminals]
         terminal_var = tk.StringVar()
@@ -466,7 +530,10 @@ class BookingsFrame(tk.Frame):
             width=25,
             font=('Arial', 10)
         )
-        terminal_cb.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
+        if self.language_manager.is_rtl():
+            terminal_cb.grid(row=current_row, column=0, sticky='e', pady=10, padx=(0, 10))
+        else:
+            terminal_cb.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
         terminal_cb.set(self.language_manager.get_text('select_terminal'))
         self.booking_widgets['terminal'] = {
             'widget': terminal_cb,
@@ -476,12 +543,16 @@ class BookingsFrame(tk.Frame):
         current_row += 1
         
         # Seat Number
-        tk.Label(
+        seat_label = tk.Label(
             scrollable_frame, 
             text=self.language_manager.get_text('seat_number') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
-        ).grid(row=current_row, column=0, sticky='w', pady=10)
+        )
+        if self.language_manager.is_rtl():
+            seat_label.grid(row=current_row, column=1, sticky='e', pady=10)
+        else:
+            seat_label.grid(row=current_row, column=0, sticky='w', pady=10)
         
         seat_var = tk.StringVar()
         seat_entry = ttk.Entry(
@@ -490,7 +561,10 @@ class BookingsFrame(tk.Frame):
             width=15,
             font=('Arial', 10)
         )
-        seat_entry.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
+        if self.language_manager.is_rtl():
+            seat_entry.grid(row=current_row, column=0, sticky='e', pady=10, padx=(0, 10))
+        else:
+            seat_entry.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
         self.booking_widgets['seat'] = {
             'widget': seat_entry,
             'var': seat_var
@@ -503,16 +577,23 @@ class BookingsFrame(tk.Frame):
             font=('Arial', 8),
             foreground='#999'
         )
-        seat_helper.grid(row=current_row, column=1, sticky='w', pady=(0, 5), padx=(150, 0))
+        if self.language_manager.is_rtl():
+            seat_helper.grid(row=current_row, column=0, sticky='e', pady=(0, 5), padx=(0, 150))
+        else:
+            seat_helper.grid(row=current_row, column=1, sticky='w', pady=(0, 5), padx=(150, 0))
         current_row += 1
         
         # Number of Seats
-        tk.Label(
+        seats_label = tk.Label(
             scrollable_frame, 
             text=self.language_manager.get_text('number_of_seats') + ":", 
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50'
-        ).grid(row=current_row, column=0, sticky='w', pady=10)
+        )
+        if self.language_manager.is_rtl():
+            seats_label.grid(row=current_row, column=1, sticky='e', pady=10)
+        else:
+            seats_label.grid(row=current_row, column=0, sticky='w', pady=10)
         
         seats_var = tk.StringVar(value="1")
         seats_spin = ttk.Spinbox(
@@ -523,7 +604,10 @@ class BookingsFrame(tk.Frame):
             width=5,
             font=('Arial', 10)
         )
-        seats_spin.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
+        if self.language_manager.is_rtl():
+            seats_spin.grid(row=current_row, column=0, sticky='e', pady=10, padx=(0, 10))
+        else:
+            seats_spin.grid(row=current_row, column=1, sticky='w', pady=10, padx=(10, 0))
         self.booking_widgets['seats_count'] = {
             'widget': seats_spin,
             'var': seats_var
@@ -535,13 +619,17 @@ class BookingsFrame(tk.Frame):
         price_frame.grid(row=current_row, column=0, columnspan=2, sticky='ew', pady=15, padx=5)
         price_frame.grid_columnconfigure(1, weight=1)
         
-        tk.Label(
+        price_label = tk.Label(
             price_frame,
             text=self.language_manager.get_text('price_calculation') + ":",
             font=('Arial', 11, 'bold'),
             foreground='#2c3e50',
             bg='#f8f9fa'
-        ).grid(row=0, column=0, sticky='w', pady=5, padx=10)
+        )
+        if self.language_manager.is_rtl():
+            price_label.grid(row=0, column=1, sticky='e', pady=5, padx=10)
+        else:
+            price_label.grid(row=0, column=0, sticky='w', pady=5, padx=10)
         
         price_display = tk.Label(
             price_frame,
@@ -550,7 +638,10 @@ class BookingsFrame(tk.Frame):
             foreground='#666',
             bg='#f8f9fa'
         )
-        price_display.grid(row=0, column=1, sticky='w', pady=5, padx=10)
+        if self.language_manager.is_rtl():
+            price_display.grid(row=0, column=0, sticky='w', pady=5, padx=10)
+        else:
+            price_display.grid(row=0, column=1, sticky='w', pady=5, padx=10)
         self.booking_widgets['price_display'] = price_display
         
         # Bind events for price calculation
@@ -575,19 +666,21 @@ class BookingsFrame(tk.Frame):
         button_frame = tk.Frame(scrollable_frame)
         button_frame.grid(row=current_row, column=0, columnspan=2, pady=20)
         
-        ttk.Button(
+        create_btn = ttk.Button(
             button_frame,
             text=self.language_manager.get_text('create_booking'),
             command=lambda: self.create_booking(booking_window),
             width=15
-        ).pack(side=tk.LEFT, padx=5)
+        )
+        create_btn.pack(side=tk.LEFT, padx=5)
         
-        ttk.Button(
+        cancel_btn = ttk.Button(
             button_frame,
             text=self.language_manager.get_text('cancel'),
             command=booking_window.destroy,
             width=15
-        ).pack(side=tk.LEFT, padx=5)
+        )
+        cancel_btn.pack(side=tk.LEFT, padx=5)
         
         # Pack the scrollable area
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
